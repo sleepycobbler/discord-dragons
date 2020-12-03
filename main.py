@@ -13,6 +13,8 @@ import party
 import os
 import emoji
 import inflect
+import json
+import jsonpickle
 
 bot_token = os.environ['BOT_TOKEN']
 
@@ -29,20 +31,32 @@ selections = [board.Board(1, 1, "dummy"), floor_plans[0], character.Character("d
 registered_players = []
 characters = []
 props = []
+master_list = {
+    'floor_plans': floor_plans,
+    'registered_players': registered_players,
+    'characters': characters,
+    'props': props
+}
 
 
-@tasks.loop(seconds=1.5, count=6)
+@tasks.loop(seconds=1.0, count=6)
 async def slow_count(my_msg):
     current_loop = slow_count.current_loop
-    keycap = number_converter.number_to_words(current_loop)
-    if current_loop == 0:
-        for my_num in range(5):
-            other_num = number_converter.number_to_words(my_num + 1)
-            await my_msg.add_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=other_num)))
-    else:
-        await my_msg.remove_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=keycap)), bot.user)
-        if current_loop == 5:
-            await my_msg.delete()
+    if current_loop != 0:
+        new_msg = my_msg.content[0:len(my_msg.content) - 1] + '{seconds}'.format(seconds=(current_loop - 5) * -1)
+        await my_msg.edit(content=new_msg)
+    if current_loop == 5:
+        await my_msg.delete()
+    # keycap = number_converter.number_to_words(current_loop)
+    # if current_loop == 0:
+    #     for my_num in range(5):
+    #         other_num = number_converter.number_to_words(my_num + 1)
+    #         await my_msg.add_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=other_num)))
+    #         await my_msg.edit(content="newcontent")
+    # else:
+    #     await my_msg.remove_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=keycap)), bot.user)
+    #     if current_loop == 5:
+    #         await my_msg.delete()
 
 
 @bot.event
@@ -66,7 +80,7 @@ async def create_channels(ctx):
         await ctx.guild.create_text_channel('manager', category=my_category)
         await ctx.guild.create_text_channel('dnd_database_do_not_edit', category=my_category)
     else:
-        my_msg = await ctx.channel.send('This server has already been initialized.')
+        my_msg = await ctx.channel.send('This server has already been initialized.\n This message will be deleted in 5')
         await slow_count.start(my_msg)
 
 
@@ -264,11 +278,16 @@ async def handle_board(ctx, *args):
 
     board_string = new_board.display()
 
+    #print(jsonpickle.encode(new_board))
+
     floor_plans[0].boards.append(new_board)
 
     my_msg = await ctx.channel.send(board_string)
 
     await ctx.channel.send("Board saved to floor plan \"" + floor_plans[0].name + "\"")
+
+    #print(jsonpickle.encode(floor_plans))
+    print(jsonpickle.encode(master_list))
 
 bot.run(bot_token)
 
