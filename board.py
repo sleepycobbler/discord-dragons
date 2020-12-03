@@ -8,7 +8,7 @@ class Board:
     length = 0
     entities = []
     fill = '.'
-    wall = '▓'
+    wall = '█'
     blank = ' '
     axis_is_labeled = True
     mobile_friendly = False

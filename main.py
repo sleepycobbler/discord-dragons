@@ -1,7 +1,7 @@
 import discord
 import logging
 from PIL import Image, ImageDraw, ImageFont
-from discord.ext import commands
+from discord.ext import tasks, commands
 import board
 import statsheet
 import character
@@ -11,8 +11,12 @@ import entity
 import prop
 import party
 import os
+import emoji
+import inflect
 
 bot_token = os.environ['BOT_TOKEN']
+
+number_converter = inflect.engine()
 
 print(bot_token)
 
@@ -27,11 +31,43 @@ characters = []
 props = []
 
 
+@tasks.loop(seconds=1.5, count=6)
+async def slow_count(my_msg):
+    current_loop = slow_count.current_loop
+    keycap = number_converter.number_to_words(current_loop)
+    if current_loop == 0:
+        for my_num in range(5):
+            other_num = number_converter.number_to_words(my_num + 1)
+            await my_msg.add_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=other_num)))
+    else:
+        await my_msg.remove_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=keycap)), bot.user)
+        if current_loop == 5:
+            await my_msg.delete()
+
+
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
     game = discord.Game("with Max's sanity")
     await bot.change_presence(activity=game, status=discord.Status.online)
+
+
+@bot.command(name="initialize")
+@commands.has_permissions(manage_channels=True)
+async def create_channels(ctx):
+
+    matches = [x for x in ctx.guild.channels if x.category is not None]
+
+    my_matches = [x for x in matches if x.category.name == 'DISCORD & DRAGONS BOT']
+
+    if len(my_matches) < 3:
+        my_category = await ctx.guild.create_category('DISCORD & DRAGONS BOT')
+        await ctx.guild.create_text_channel('board', category=my_category)
+        await ctx.guild.create_text_channel('manager', category=my_category)
+        await ctx.guild.create_text_channel('dnd_database_do_not_edit', category=my_category)
+    else:
+        my_msg = await ctx.channel.send('This server has already been initialized.')
+        await slow_count.start(my_msg)
 
 
 @bot.command(name="register")
