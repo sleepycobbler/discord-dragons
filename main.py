@@ -140,92 +140,6 @@ async def list_items(ctx):
     await ctx.send(list)
 
 
-@bot.command(name="select")
-async def handle_select(ctx, *args):
-
-    if len(args) == 0:
-        await ctx.send("Please say what you would like to select (e.g. board, floorplan, character, prop, player)")
-        return
-
-    if len(args) == 1:
-        await ctx.send("Please state the name of the thing you would like to select")
-        return
-
-    target = args[0].lower()
-    name = args[1].lower()
-
-    async def select_board(name):
-        board_match = [x for x in selections[1].boards if x.name == name]
-        if len(board_match) < 1:
-            await ctx.send("Board \"" + name + "\" was not found within the selected \"" + selections[1].name + "\" floor plan.")
-            return
-        else:
-            selections.pop(0)
-            selections.insert(0, board_match[0])
-
-    async def select_floor_plan(name):
-        floor_plan_match = [x for x in floor_plans if x.name == name]
-        if len(floor_plan_match) < 1:
-            await ctx.send("Floor plan \"" + name + "\" was not found.")
-            return
-        else:
-            selections.pop(1)
-            selections.insert(1, floor_plan_match[0])
-
-    async def select_character(name):
-        character_match = [x for x in characters if x.name == name]
-        if len(character_match) < 1:
-            await ctx.send("\"" + name + "\" was not found among the characters.")
-            return
-        else:
-            selections.pop(2)
-            selections.insert(2, [x for x in characters if x.name == name][0])
-
-    async def select_prop(name):
-        selections.pop(3)
-        selections.insert(3, [x for x in props if x.name == name][0])
-
-    async def select_player(name):
-        player_match = [x for x in registered_players if x.name == name]
-        if len(player_match) < 1:
-            await ctx.send("\"" + name + "\" was not found among the players.")
-            return
-        else:
-            selections.pop(4)
-            selections.insert(4, player_match[0])
-
-    switcher = {
-        "board": select_board,
-        "floorplan": select_floor_plan,
-        "character": select_character,
-        "prop": select_prop,
-        "player": select_player
-    }
-
-    await switcher.get(target)(name)
-
-    selection_list = ''
-
-    count = 0
-
-    selections_list = {
-        0: "Board",
-        1: "Floor plan",
-        2: "Character",
-        3: "Prop",
-        4: "Player"
-    }
-
-    for selection in selections:
-        if selection.name != "dummy":
-            selection_list += '\t' + selections_list.get(count) + "\n\t\t" + selection.name + "\n"
-        else:
-            selection_list += '\t' + selections_list.get(count) + "\n\t\tNone\n"
-        count += 1
-
-    await ctx.send("Current selections:\n" + selection_list)
-
-
 @bot.command(name="floorplan")
 async def handle_floor_plan(ctx, arg):
     floor_plans.append(floorplan.FloorPlan(str(arg)))
@@ -278,7 +192,7 @@ async def handle_board(ctx, *args):
 
     board_string = new_board.display()
 
-    #print(jsonpickle.encode(new_board))
+    # print(jsonpickle.encode(new_board))
 
     floor_plans[0].boards.append(new_board)
 
@@ -286,9 +200,94 @@ async def handle_board(ctx, *args):
 
     await ctx.channel.send("Board saved to floor plan \"" + floor_plans[0].name + "\"")
 
-    #print(jsonpickle.encode(floor_plans))
+    # print(jsonpickle.encode(floor_plans))
     print(jsonpickle.encode(master_list))
 
 bot.run(bot_token)
+
+# @bot.command(name="select")
+# async def handle_select(ctx, *args):
+#
+#     if len(args) == 0:
+#         await ctx.send("Please say what you would like to select (e.g. board, floorplan, character, prop, player)")
+#         return
+#
+#     if len(args) == 1:
+#         await ctx.send("Please state the name of the thing you would like to select")
+#         return
+#
+#     target = args[0].lower()
+#     name = args[1].lower()
+#
+#     async def select_board(name):
+#         board_match = [x for x in selections[1].boards if x.name == name]
+#         if len(board_match) < 1:
+#             await ctx.send("Board \"" + name + "\" was not found within the selected \"" + selections[1].name + "\" floor plan.")
+#             return
+#         else:
+#             selections.pop(0)
+#             selections.insert(0, board_match[0])
+#
+#     async def select_floor_plan(name):
+#         floor_plan_match = [x for x in floor_plans if x.name == name]
+#         if len(floor_plan_match) < 1:
+#             await ctx.send("Floor plan \"" + name + "\" was not found.")
+#             return
+#         else:
+#             selections.pop(1)
+#             selections.insert(1, floor_plan_match[0])
+#
+#     async def select_character(name):
+#         character_match = [x for x in characters if x.name == name]
+#         if len(character_match) < 1:
+#             await ctx.send("\"" + name + "\" was not found among the characters.")
+#             return
+#         else:
+#             selections.pop(2)
+#             selections.insert(2, [x for x in characters if x.name == name][0])
+#
+#     async def select_prop(name):
+#         selections.pop(3)
+#         selections.insert(3, [x for x in props if x.name == name][0])
+#
+#     async def select_player(name):
+#         player_match = [x for x in registered_players if x.name == name]
+#         if len(player_match) < 1:
+#             await ctx.send("\"" + name + "\" was not found among the players.")
+#             return
+#         else:
+#             selections.pop(4)
+#             selections.insert(4, player_match[0])
+#
+#     switcher = {
+#         "board": select_board,
+#         "floorplan": select_floor_plan,
+#         "character": select_character,
+#         "prop": select_prop,
+#         "player": select_player
+#     }
+#
+#     await switcher.get(target)(name)
+#
+#     selection_list = ''
+#
+#     count = 0
+#
+#     selections_list = {
+#         0: "Board",
+#         1: "Floor plan",
+#         2: "Character",
+#         3: "Prop",
+#         4: "Player"
+#     }
+#
+#     for selection in selections:
+#         if selection.name != "dummy":
+#             selection_list += '\t' + selections_list.get(count) + "\n\t\t" + selection.name + "\n"
+#         else:
+#             selection_list += '\t' + selections_list.get(count) + "\n\t\tNone\n"
+#         count += 1
+#
+#     await ctx.send("Current selections:\n" + selection_list)
 
 

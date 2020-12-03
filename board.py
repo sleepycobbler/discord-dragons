@@ -15,7 +15,7 @@ class Board:
     y_buffer = 3
     x_buffer = 4
 
-    def __init__(self, width, length, name='', fill='.', wall='▓', axis_is_labeled=True, mobile_friendly=False):
+    def __init__(self, width, length, name='', fill='.', wall='█', axis_is_labeled=True, mobile_friendly=False):
         self.set_width(width)
         self.set_length(length)
         self.set_name(name)
