@@ -65,6 +65,10 @@ async def on_ready():
     game = discord.Game("with Max's sanity")
     await bot.change_presence(activity=game, status=discord.Status.online)
 
+@bot.command(name="menu")
+async def display_menu():
+    pass
+
 
 @bot.command(name="initialize")
 @commands.has_permissions(manage_channels=True)
@@ -79,6 +83,8 @@ async def create_channels(ctx):
         await ctx.guild.create_text_channel('board', category=my_category)
         await ctx.guild.create_text_channel('manager', category=my_category)
         await ctx.guild.create_text_channel('dnd_database_do_not_edit', category=my_category)
+        database_channel = [x for x in ctx.guild.channels if x.name == 'dnd_database_do_not_edit']
+        await database_channel[0].send(jsonpickle.encode(master_list))
     else:
         my_msg = await ctx.channel.send('This server has already been initialized.\n This message will be deleted in 5')
         await slow_count.start(my_msg)
@@ -192,16 +198,34 @@ async def handle_board(ctx, *args):
 
     board_string = new_board.display()
 
-    # print(jsonpickle.encode(new_board))
-
     floor_plans[0].boards.append(new_board)
 
     my_msg = await ctx.channel.send(board_string)
 
     await ctx.channel.send("Board saved to floor plan \"" + floor_plans[0].name + "\"")
 
-    # print(jsonpickle.encode(floor_plans))
-    print(jsonpickle.encode(master_list))
+    data_channel = [x for x in ctx.guild.channels if x.name == 'dnd_database_do_not_edit']
+
+    if len(await data_channel[0].history(limit=200).flatten()) > 0:
+        old_master_data_string = ''
+
+        for section in await data_channel[0].history(limit=200).flatten():
+            old_master_data_string = section.content + old_master_data_string
+            await section.delete()
+
+        data_channel[0].purge()
+
+        old_master_data = jsonpickle.decode(old_master_data_string)
+
+        old_master_data['floor_plans'][0].boards.append(new_board)
+
+        json_store = jsonpickle.encode(old_master_data)
+
+        n = 1999
+        split_list_data = [json_store[i:i + n] for i in range(0, len(json_store), n)]
+
+        for msg in split_list_data:
+            await data_channel[0].send(msg)
 
 bot.run(bot_token)
 
@@ -222,7 +246,8 @@ bot.run(bot_token)
 #     async def select_board(name):
 #         board_match = [x for x in selections[1].boards if x.name == name]
 #         if len(board_match) < 1:
-#             await ctx.send("Board \"" + name + "\" was not found within the selected \"" + selections[1].name + "\" floor plan.")
+#             await ctx.send("Board \"" + name + "\" was not found within the selected \"" + selections[1].name + "\"
+#             floor plan.")
 #             return
 #         else:
 #             selections.pop(0)
@@ -289,5 +314,3 @@ bot.run(bot_token)
 #         count += 1
 #
 #     await ctx.send("Current selections:\n" + selection_list)
-
-
