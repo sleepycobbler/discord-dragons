@@ -16,7 +16,7 @@ class Board:
     x_buffer = 4
     floor_plans = []
 
-    def __init__(self, width, length, plan_ids, name='', fill='.', wall='█', axis_is_labeled=True, mobile_friendly=False):
+    def __init__(self, width, length, plan_ids='', name='', fill='.', wall='█', axis_is_labeled=True, mobile_friendly=False):
         self.set_width(width)
         self.set_length(length)
         self.set_name(name)
@@ -27,7 +27,7 @@ class Board:
         self.set_floor_plans(plan_ids)
 
     def set_floor_plans(self, plans):
-        for plan in plans:
+        for plan in plans.split(','):
             self.floor_plans.append(plan)
 
     def set_name(self, name):
