@@ -40,7 +40,9 @@ class JsonMaster:
             if obj_parent_id >= 0:
                 obj.id = master_data['board_current_id']
                 master_data['board_current_id'] += 1
-                master_data['floor_plans'][obj_parent_id].boards.append(obj)
+                target_floor_plan = [x for x in (master_data['floor_plans']) if x.id == obj_parent_id][0]
+                target_index = master_data['floor_plans'].index(target_floor_plan)
+                master_data['floor_plans'][target_index].boards.append(obj)
 
         if isinstance(obj, character.Character):
             obj.id = master_data['char_current_id']
@@ -98,7 +100,7 @@ class JsonMaster:
         master_data = await JsonMaster.get_current_data(ctx)
 
         if isinstance(obj, floorplan.FloorPlan):
-            if len(master_data['floor_plans']) > 1 and obj in master_data['floor_plans']:
+            if len(master_data['floor_plans']) > 0 and obj in master_data['floor_plans']:
                 item_match = [x for x in (master_data['floor_plans']) if x.id == obj.id][0]
                 item_index = master_data['floor_plans'].index(item_match)
                 master_data['floor_plans'][item_index] = obj

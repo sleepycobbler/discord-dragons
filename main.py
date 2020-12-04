@@ -25,13 +25,14 @@ logging.basicConfig(level=logging.INFO)
 
 bot = commands.Bot(command_prefix='!')
 
-floor_plans = [floorplan.FloorPlan("Floor 1")]
+floor_plans = []
 registered_players = []
 characters = []
 props = []
 master_list_template = {
     'floor_plans': floor_plans,
     'fp_current_id': 0,
+    'target_floor_plan_id': 0,
     'registered_players': registered_players,
     'characters': characters,
     'char_current_id': 0,
@@ -78,6 +79,7 @@ async def create_channels(ctx):
         await ctx.guild.create_text_channel('dnd_database_do_not_edit', category=my_category)
         database_channel = [x for x in ctx.guild.channels if x.name == 'dnd_database_do_not_edit']
         await database_channel[0].send(jsonpickle.encode(master_list_template))
+        await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan('Floor 1'))
     else:
         my_msg = await ctx.channel.send('This server has already been initialized.\n This message will be deleted in 5')
         await slow_count.start(my_msg)
@@ -127,20 +129,32 @@ async def list_items(ctx):
 
 
 @bot.command(name="floorplan")
-async def handle_floor_plan(ctx, arg):
-    await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan(str(arg)))
-    await ctx.send("The floor plan \"" + arg + "\" has been added.")
+async def handle_floor_plan(ctx, name, action='add'):
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+
+    if action == 'add':
+        await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan(name))
+        await ctx.send('Floor plan \"' + name + "\" has been created and saved!")
+
+    if action == 'target':
+        target_floor_plan = [x for x in (current_data['floor_plans']) if x.name == name][0]
+        target_index = current_data['floor_plans'].index(target_floor_plan)
+        current_data['target_floor_plan_id'] = current_data['floor_plans'][target_index].id
+        await jsonmaster.JsonMaster.purge_current_data(ctx)
+        await jsonmaster.JsonMaster.send_current_data(ctx, current_data)
+        await ctx.send('Floor plan \"' + name + "\" has been targeted for work!")
 
 
 @bot.command(name="board")
 async def handle_board(ctx, *args):
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
 
     width = int(args[0].split('x')[0])
     length = int(args[0].split('x')[1])
     if len(args) > 1 and args[1] != ['-f', '-w', '-mf', '-nl']:
         name = args[1]
     else:
-        name = 'Board ' + str(len(floor_plans[0].boards) + 1)
+        name = 'Board ' + str(current_data['board_current_id'] + 1)
 
     if width * length >= 2000:
         await ctx.channel.send("Dimensions too large")
@@ -181,12 +195,12 @@ async def handle_board(ctx, *args):
 
     board_string = new_board.display()
 
-    floor_plans[0].boards.append(new_board)
-
     my_msg = await ctx.channel.send(board_string)
 
-    await jsonmaster.JsonMaster.add(ctx, new_board, 0) # TODO: Fix this to add the targeted floor plan
-    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
-    await ctx.channel.send("Board saved to floor plan \"" + current_data['floor_plans'][0].name + "\"")
+    await jsonmaster.JsonMaster.add(ctx, new_board, obj_parent_id=current_data['target_floor_plan_id'])
+
+    target_floor_plan = [x for x in (current_data['floor_plans']) if x.id == current_data['target_floor_plan_id']][0]
+    target_index = current_data['floor_plans'].index(target_floor_plan)
+    await ctx.channel.send("Board saved to floor plan \"" + current_data['floor_plans'][target_index].name + "\"")
 
 bot.run(bot_token)
