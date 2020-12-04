@@ -3,12 +3,11 @@ import character
 
 class Player:
     name = ''
-    id = ''
     characters = []
     is_dm = False
 
-    def __init__(self, name, id):
+    def __init__(self, name, player_id=-1):
         self.name = name
-        self.id = id
+        self.id = player_id
         self.characters = []
         self.is_dm = False

@@ -15,19 +15,17 @@ import emoji
 import inflect
 import json
 import jsonpickle
+import jsonmaster
 
 bot_token = os.environ['BOT_TOKEN']
 
 number_converter = inflect.engine()
-
-print(bot_token)
 
 logging.basicConfig(level=logging.INFO)
 
 bot = commands.Bot(command_prefix='!')
 
 floor_plans = [floorplan.FloorPlan("Floor 1")]
-selections = [board.Board(1, 1, "dummy"), floor_plans[0], character.Character("dummy"), prop.Prop("dummy"), player.Player("dummy", "dummy")]
 registered_players = []
 characters = []
 props = []
@@ -64,6 +62,7 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
     game = discord.Game("with Max's sanity")
     await bot.change_presence(activity=game, status=discord.Status.online)
+
 
 @bot.command(name="menu")
 async def display_menu():
@@ -124,25 +123,6 @@ async def list_items(ctx):
     for my_player in registered_players:
         list += '\t' + str(my_player.id) + '\n'
 
-    list += '\nCurrent selections:\n'
-
-    count = 0
-
-    selections_list = {
-        0: "Board",
-        1: "Floor plan",
-        2: "Character",
-        3: "Prop",
-        4: "Player"
-    }
-
-    for selection in selections:
-        if selection.name != "dummy":
-            list += '\t' + selections_list.get(count) + "\n\t\t" + selection.name + "\n"
-        else:
-            list += '\t' + selections_list.get(count) + "\n\t\tNone\n"
-        count += 1
-
     await ctx.send(list)
 
 
@@ -191,7 +171,10 @@ async def handle_board(ctx, *args):
     for arg in args:
         if arg[0] == '-':
             func = switcher.get(arg.strip('-'), "nothing")
-            func(args[arg_marker + 1])
+            if len(args) + 1 > arg_marker:
+                func(args[arg_marker + 1])
+            else:
+                func()
         arg_marker += 1
 
     await ctx.channel.send("Here is the new board named \"" + name + "\"")
