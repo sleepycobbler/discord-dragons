@@ -3,9 +3,14 @@ class Entity:
     position = [0, 0]
     icon = ''
     size = [1, 1]
+    id = -1
 
     def __init__(self, name):
         self.name = name
+        self.id = -1
+        self.position = [0, 0]
+        self.icon = ''
+        self.size = [1, 1]
         pass
 
     def set_name(self, name):

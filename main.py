@@ -15,27 +15,30 @@ import emoji
 import inflect
 import json
 import jsonpickle
+import jsonmaster
 
 bot_token = os.environ['BOT_TOKEN']
 
 number_converter = inflect.engine()
 
-print(bot_token)
-
 logging.basicConfig(level=logging.INFO)
 
 bot = commands.Bot(command_prefix='!')
 
-floor_plans = [floorplan.FloorPlan("Floor 1")]
-selections = [board.Board(1, 1, "dummy"), floor_plans[0], character.Character("dummy"), prop.Prop("dummy"), player.Player("dummy", "dummy")]
+floor_plans = []
 registered_players = []
 characters = []
 props = []
-master_list = {
+master_list_template = {
     'floor_plans': floor_plans,
+    'fp_current_id': 0,
+    'target_floor_plan_id': 0,
     'registered_players': registered_players,
     'characters': characters,
-    'props': props
+    'char_current_id': 0,
+    'props': props,
+    'props_current_id': 0,
+    'board_current_id': 0
 }
 
 
@@ -47,16 +50,6 @@ async def slow_count(my_msg):
         await my_msg.edit(content=new_msg)
     if current_loop == 5:
         await my_msg.delete()
-    # keycap = number_converter.number_to_words(current_loop)
-    # if current_loop == 0:
-    #     for my_num in range(5):
-    #         other_num = number_converter.number_to_words(my_num + 1)
-    #         await my_msg.add_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=other_num)))
-    #         await my_msg.edit(content="newcontent")
-    # else:
-    #     await my_msg.remove_reaction(emoji.emojize(':keycap_digit_{num}:'.format(num=keycap)), bot.user)
-    #     if current_loop == 5:
-    #         await my_msg.delete()
 
 
 @bot.event
@@ -64,6 +57,11 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
     game = discord.Game("with Max's sanity")
     await bot.change_presence(activity=game, status=discord.Status.online)
+
+
+@bot.command(name="menu")
+async def display_menu():
+    pass
 
 
 @bot.command(name="initialize")
@@ -79,82 +77,84 @@ async def create_channels(ctx):
         await ctx.guild.create_text_channel('board', category=my_category)
         await ctx.guild.create_text_channel('manager', category=my_category)
         await ctx.guild.create_text_channel('dnd_database_do_not_edit', category=my_category)
+        database_channel = [x for x in ctx.guild.channels if x.name == 'dnd_database_do_not_edit']
+        await database_channel[0].send(jsonpickle.encode(master_list_template))
+        await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan('Floor 1'))
     else:
         my_msg = await ctx.channel.send('This server has already been initialized.\n This message will be deleted in 5')
         await slow_count.start(my_msg)
 
 
 @bot.command(name="register")
-async def register_player(command):
-    for player_test in registered_players:
-        if str(command.author) == player_test.id:
-            await command.channel.send('player is already registered.')
-            return
+async def register_player(ctx):
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+    current_players = current_data['registered_players']
 
-    registered_players.append(player.Player(command.author.name, str(command.author)))
-    await command.channel.send('player Registered!')
+    if len([x for x in current_players if x.id == str(ctx.author)]) > 0:
+        await ctx.channel.send('player is already registered.')
+        return
+
+    await jsonmaster.JsonMaster.add(ctx, player.Player(ctx.author.name, str(ctx.author)))
+    await ctx.channel.send('player Registered!')
 
 
 @bot.command(name="players")
-async def list_players(command):
+async def list_players(ctx):
     users = ''
-    for user in registered_players:
-        users += '\t' + str(user) + '\n'
-    await command.channel.send('Users are:\n' + users)
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+    current_users = current_data['registered_players']
+    for user in current_users:
+        users += '\n' + user.id + ' '
+    await ctx.channel.send('Users are:' + users)
 
 
 @bot.command(name="list")
 async def list_items(ctx):
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+
     list = ''
 
     list += 'Floor plans:\n'
-    for plan in floor_plans:
+    for plan in current_data['floor_plans']:
         list += "\t" + plan.name + ':\n'
         for plan_board in plan.boards:
             list += '\t\t' + plan_board.name + '\n'
 
     list += '\nPlayers:\n'
 
-    for my_player in registered_players:
-        list += '\t' + str(my_player.id) + '\n'
-
-    list += '\nCurrent selections:\n'
-
-    count = 0
-
-    selections_list = {
-        0: "Board",
-        1: "Floor plan",
-        2: "Character",
-        3: "Prop",
-        4: "Player"
-    }
-
-    for selection in selections:
-        if selection.name != "dummy":
-            list += '\t' + selections_list.get(count) + "\n\t\t" + selection.name + "\n"
-        else:
-            list += '\t' + selections_list.get(count) + "\n\t\tNone\n"
-        count += 1
+    for user in current_data['registered_players']:
+        list += '\t' + str(user.id) + '\n'
 
     await ctx.send(list)
 
 
 @bot.command(name="floorplan")
-async def handle_floor_plan(ctx, arg):
-    floor_plans.append(floorplan.FloorPlan(str(arg)))
-    await ctx.send("The floor plan \"" + arg + "\" has been added.")
+async def handle_floor_plan(ctx, name, action='add'):
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+
+    if action == 'add':
+        await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan(name))
+        await ctx.send('Floor plan \"' + name + "\" has been created and saved!")
+
+    if action == 'target':
+        target_floor_plan = [x for x in (current_data['floor_plans']) if x.name == name][0]
+        target_index = current_data['floor_plans'].index(target_floor_plan)
+        current_data['target_floor_plan_id'] = current_data['floor_plans'][target_index].id
+        await jsonmaster.JsonMaster.purge_current_data(ctx)
+        await jsonmaster.JsonMaster.send_current_data(ctx, current_data)
+        await ctx.send('Floor plan \"' + name + "\" has been targeted for work!")
 
 
 @bot.command(name="board")
 async def handle_board(ctx, *args):
+    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
 
     width = int(args[0].split('x')[0])
     length = int(args[0].split('x')[1])
     if len(args) > 1 and args[1] != ['-f', '-w', '-mf', '-nl']:
         name = args[1]
     else:
-        name = 'Board ' + str(len(floor_plans[0].boards) + 1)
+        name = 'Board ' + str(current_data['board_current_id'] + 1)
 
     if width * length >= 2000:
         await ctx.channel.send("Dimensions too large")
@@ -185,109 +185,22 @@ async def handle_board(ctx, *args):
     for arg in args:
         if arg[0] == '-':
             func = switcher.get(arg.strip('-'), "nothing")
-            func(args[arg_marker + 1])
+            if len(args) + 1 > arg_marker:
+                func(args[arg_marker + 1])
+            else:
+                func()
         arg_marker += 1
 
     await ctx.channel.send("Here is the new board named \"" + name + "\"")
 
     board_string = new_board.display()
 
-    # print(jsonpickle.encode(new_board))
-
-    floor_plans[0].boards.append(new_board)
-
     my_msg = await ctx.channel.send(board_string)
 
-    await ctx.channel.send("Board saved to floor plan \"" + floor_plans[0].name + "\"")
+    await jsonmaster.JsonMaster.add(ctx, new_board, obj_parent_id=current_data['target_floor_plan_id'])
 
-    # print(jsonpickle.encode(floor_plans))
-    print(jsonpickle.encode(master_list))
+    target_floor_plan = [x for x in (current_data['floor_plans']) if x.id == current_data['target_floor_plan_id']][0]
+    target_index = current_data['floor_plans'].index(target_floor_plan)
+    await ctx.channel.send("Board saved to floor plan \"" + current_data['floor_plans'][target_index].name + "\"")
 
 bot.run(bot_token)
-
-# @bot.command(name="select")
-# async def handle_select(ctx, *args):
-#
-#     if len(args) == 0:
-#         await ctx.send("Please say what you would like to select (e.g. board, floorplan, character, prop, player)")
-#         return
-#
-#     if len(args) == 1:
-#         await ctx.send("Please state the name of the thing you would like to select")
-#         return
-#
-#     target = args[0].lower()
-#     name = args[1].lower()
-#
-#     async def select_board(name):
-#         board_match = [x for x in selections[1].boards if x.name == name]
-#         if len(board_match) < 1:
-#             await ctx.send("Board \"" + name + "\" was not found within the selected \"" + selections[1].name + "\" floor plan.")
-#             return
-#         else:
-#             selections.pop(0)
-#             selections.insert(0, board_match[0])
-#
-#     async def select_floor_plan(name):
-#         floor_plan_match = [x for x in floor_plans if x.name == name]
-#         if len(floor_plan_match) < 1:
-#             await ctx.send("Floor plan \"" + name + "\" was not found.")
-#             return
-#         else:
-#             selections.pop(1)
-#             selections.insert(1, floor_plan_match[0])
-#
-#     async def select_character(name):
-#         character_match = [x for x in characters if x.name == name]
-#         if len(character_match) < 1:
-#             await ctx.send("\"" + name + "\" was not found among the characters.")
-#             return
-#         else:
-#             selections.pop(2)
-#             selections.insert(2, [x for x in characters if x.name == name][0])
-#
-#     async def select_prop(name):
-#         selections.pop(3)
-#         selections.insert(3, [x for x in props if x.name == name][0])
-#
-#     async def select_player(name):
-#         player_match = [x for x in registered_players if x.name == name]
-#         if len(player_match) < 1:
-#             await ctx.send("\"" + name + "\" was not found among the players.")
-#             return
-#         else:
-#             selections.pop(4)
-#             selections.insert(4, player_match[0])
-#
-#     switcher = {
-#         "board": select_board,
-#         "floorplan": select_floor_plan,
-#         "character": select_character,
-#         "prop": select_prop,
-#         "player": select_player
-#     }
-#
-#     await switcher.get(target)(name)
-#
-#     selection_list = ''
-#
-#     count = 0
-#
-#     selections_list = {
-#         0: "Board",
-#         1: "Floor plan",
-#         2: "Character",
-#         3: "Prop",
-#         4: "Player"
-#     }
-#
-#     for selection in selections:
-#         if selection.name != "dummy":
-#             selection_list += '\t' + selections_list.get(count) + "\n\t\t" + selection.name + "\n"
-#         else:
-#             selection_list += '\t' + selections_list.get(count) + "\n\t\tNone\n"
-#         count += 1
-#
-#     await ctx.send("Current selections:\n" + selection_list)
-
-
