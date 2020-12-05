@@ -7,14 +7,14 @@ class StatSheet:
     speed = 0
     stats = [0, 0, 0, 0, 0, 0]
 
-    def __init__(self):
-        self.max_health = 0
-        self.temp_max_health = 0
-        self.health = 0
-        self.temp_health = 0
-        self.ac = 0
-        self.speed = 0
-        self.stats = [0, 0, 0, 0, 0, 0]
+    def __init__(self, max_health, ac, speed, stats=None):
+        self.max_health = max_health
+        self.ac = ac
+        self.speed = speed
+        if stats is not None and len(stats) == 6:
+            self.stats = stats
+        else:
+            self.stats = [0, 0, 0, 0, 0, 0]
 
     def heal(self, amount):
         assert self.is_integer(amount), "Heal amount must be whole number."

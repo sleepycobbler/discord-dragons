@@ -6,8 +6,10 @@ class Character(entity.Entity):
     sheet = statsheet.StatSheet()
     initiative = 0
 
-    def __init__(self, name):
+    def __init__(self, name, player_name, max_health, armor_class, speed, stats=None):
         super().__init__(name)
+        self.sheet = statsheet.StatSheet(max_health, armor_class, speed, stats)
+        self.player_name = player_name
 
     def set_sheet(self, stats):
         self.sheet = stats
