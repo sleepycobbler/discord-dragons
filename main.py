@@ -164,60 +164,66 @@ async def handle_floor_plan(ctx, name, action='add'):
 
 @bot.command(name="board")
 async def handle_board(ctx, *args):
-    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+    async with ctx.channel.typing():
+        current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
 
-    width = int(args[0].split('x')[0])
-    length = int(args[0].split('x')[1])
-    if len(args) > 1 and args[1] not in ['-f', '-w', '-mf', '-nl']:
-        name = args[1]
-    else:
-        name = 'Board ' + str(current_data['board_current_id'] + 1)
+        width = int(args[0].split('x')[0])
+        length = int(args[0].split('x')[1])
+        if len(args) > 1 and args[1] not in ['-f', '-w', '-mf', '-nl']:
+            name = args[1]
+        else:
+            name = 'Board ' + str(current_data['board_current_id'] + 1)
 
-    if width * length >= 2000:
-        await ctx.channel.send("Dimensions too large")
-        return
+        if (width * 2 + 5) * (length + 4) > 2000:
+            await ctx.channel.send("Dimensions too large")
+            return
 
-    def f(fill):
-        new_board.fill = fill
+        if width > 52:
+            await ctx.channel.send("Width is too long; cannot exceed 52. Try switching the length and width.")
+            return
 
-    def w(wall):
-        new_board.wall = wall
+        def f(fill):
+            new_board.fill = fill
 
-    def mf(friend):
-        new_board.mobile_friendly = True
+        def w(wall):
+            new_board.wall = wall
 
-    def nl(no_labels):
-        new_board.axis_is_labeled = False
+        def mf(friend):
+            new_board.mobile_friendly = True
 
-    switcher = {
-        'f': f,
-        'w': w,
-        'mf': mf,
-        'nl': nl
-    }
+        def nl(no_labels):
+            new_board.axis_is_labeled = False
 
-    new_board = board.Board(width, length, name=name)
+        switcher = {
+            'f': f,
+            'w': w,
+            'mf': mf,
+            'nl': nl
+        }
 
-    arg_marker = 0
-    for arg in args:
-        if arg[0] == '-':
-            func = switcher.get(arg.strip('-'), "nothing")
-            if len(args) + 1 > arg_marker:
-                func(args[arg_marker + 1])
-            else:
-                func()
-        arg_marker += 1
+        new_board = board.Board(width, length, name=name)
 
-    await ctx.channel.send("Here is the new board named \"" + name + "\"")
+        arg_marker = 0
+        for arg in args:
+            if arg[0] == '-':
+                func = switcher.get(arg.strip('-'), "nothing")
+                if len(args) + 1 > arg_marker:
+                    func(args[arg_marker + 1])
+                else:
+                    func()
+            arg_marker += 1
+        async with ctx.channel.typing():
+            await ctx.channel.send("Here is the new board named \"" + name + "\"")
 
-    board_string = new_board.display_square()
+        board_string = new_board.display_square()
+        async with ctx.channel.typing():
+            my_msg = await ctx.channel.send(board_string)
+        async with ctx.channel.typing():
+            await jsonmaster.JsonMaster.add(ctx, new_board, obj_parent_id=current_data['target_floor_plan_id'])
 
-    my_msg = await ctx.channel.send(board_string)
-
-    await jsonmaster.JsonMaster.add(ctx, new_board, obj_parent_id=current_data['target_floor_plan_id'])
-
-    target_floor_plan = [x for x in (current_data['floor_plans']) if x.id == current_data['target_floor_plan_id']][0]
-    target_index = current_data['floor_plans'].index(target_floor_plan)
-    await ctx.channel.send("Board saved to floor plan \"" + current_data['floor_plans'][target_index].name + "\"")
+        target_floor_plan = [x for x in (current_data['floor_plans']) if x.id == current_data['target_floor_plan_id']][0]
+        target_index = current_data['floor_plans'].index(target_floor_plan)
+        async with ctx.channel.typing():
+            await ctx.channel.send("Board saved to floor plan \"" + current_data['floor_plans'][target_index].name + "\"")
 
 bot.run(bot_token)
