@@ -18,6 +18,10 @@ class DimensionsConverter(commands.Converter):
 
 
 class Add(commands.Cog):
+
+    def __init__(self, bot):
+        self.bot = bot
+
     @commands.group()
     async def add(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -126,7 +130,16 @@ class Add(commands.Cog):
         pass
 
     @add.command()
-    async def player(self):
+    async def player(self, ctx, player_name: discord.Member):
+        current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+        current_players = current_data['registered_players']
+
+        if len([x for x in current_players if x.id == str(player_name)]) > 0:
+            await ctx.channel.send('player is already registered.')
+            return
+
+        await jsonmaster.JsonMaster.add(ctx, player.Player(ctx.author.name, str(player_name)))
+        await ctx.channel.send('player Registered!')
         pass
 
     @commands.command()

@@ -3,7 +3,6 @@ import entity
 
 
 class Character(entity.Entity):
-    sheet = statsheet.StatSheet()
     initiative = 0
 
     def __init__(self, name, player_name, max_health, armor_class, speed, stats=None):

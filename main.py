@@ -16,6 +16,7 @@ import inflect
 import json
 import jsonpickle
 import jsonmaster
+import add
 
 bot_token = os.environ['BOT_TOKEN']
 
@@ -24,6 +25,7 @@ number_converter = inflect.engine()
 logging.basicConfig(level=logging.INFO)
 
 bot = commands.Bot(command_prefix='!')
+bot.add_cog(add.Add(bot))
 
 floor_plans = []
 registered_players = []
@@ -85,17 +87,17 @@ async def create_channels(ctx):
         await slow_count.start(my_msg)
 
 
-@bot.command(name="register")
-async def register_player(ctx):
-    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
-    current_players = current_data['registered_players']
-
-    if len([x for x in current_players if x.id == str(ctx.author)]) > 0:
-        await ctx.channel.send('player is already registered.')
-        return
-
-    await jsonmaster.JsonMaster.add(ctx, player.Player(ctx.author.name, str(ctx.author)))
-    await ctx.channel.send('player Registered!')
+# @bot.command(name="register")
+# async def register_player(ctx):
+#     current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
+#     current_players = current_data['registered_players']
+#
+#     if len([x for x in current_players if x.id == str(ctx.author)]) > 0:
+#         await ctx.channel.send('player is already registered.')
+#         return
+#
+#     await jsonmaster.JsonMaster.add(ctx, player.Player(ctx.author.name, str(ctx.author)))
+#     await ctx.channel.send('player Registered!')
 
 
 @bot.command(name="players")
