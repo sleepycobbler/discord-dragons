@@ -17,6 +17,7 @@ import json
 import jsonpickle
 import jsonmaster
 import add
+import lister
 
 bot_token = os.environ['BOT_TOKEN']
 
@@ -26,6 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 bot = commands.Bot(command_prefix='!')
 bot.add_cog(add.Add(bot))
+bot.add_cog(lister.Lister(bot))
 
 floor_plans = []
 registered_players = []
@@ -108,43 +110,6 @@ async def list_players(ctx):
     for user in current_users:
         users += '\n' + user.id + ' '
     await ctx.channel.send('Users are:' + users)
-
-
-@bot.command(name="list")
-async def list_items(ctx):
-    current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
-
-    list = '╔'
-
-    tl_corn = '╔'
-    tr_corn = '╗'
-    bl_corn = '╚'
-    br_corn = '╝'
-    hor = '═'
-    vert = '║'
-    t_up = '╩'
-    t_down = '╦'
-    t_left = '╣'
-    t_right = '╠'
-    cross = '╬'
-
-    list += 'Floor plans:\n'
-    for plan in current_data['floor_plans']:
-        list += "\t" + plan.name + ':\n'
-        for plan_board in plan.boards:
-            list += '\t\t' + plan_board.name + '\n'
-
-    list += '\nPlayers:\n'
-
-    for user in current_data['registered_players']:
-        list += '\t' + str(user.id) + '\n'
-
-    list += '\nCharacters:\n'
-
-    for char in current_data['characters']:
-        list += '\t' + char.name + '\n'
-
-    await ctx.send(list)
 
 
 @bot.command(name="floorplan")

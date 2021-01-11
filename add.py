@@ -29,7 +29,7 @@ class Add(commands.Cog):
 
     @add.command()
     async def floorplan(self, ctx, *name: str):
-        await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan(name))
+        await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan(' '.join(name)))
 
     @add.command()
     async def board(self, ctx, dimensions: DimensionsConverter(), name=None, *mods):
@@ -107,7 +107,7 @@ class Add(commands.Cog):
 
         current_data = await jsonmaster.JsonMaster.get_current_data(ctx)
 
-        if str(player_name) not in current_data['registered_players']:
+        if str(player_name) not in (c.id for c in current_data['registered_players']):
             await ctx.send('Player is not registered for this campaign.')
             return
 
@@ -115,7 +115,7 @@ class Add(commands.Cog):
 
         current_data['characters'].append(new_character)
 
-        player_match = [x for x in current_data['registered_players'] if x.id == str(player_name)]
+        player_match = [x for x in current_data['registered_players'] if x.id == str(player_name)][0]
 
         player_match_index = current_data['registered_players'].index(player_match)
 
