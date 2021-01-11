@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+from datetime import date
 
 
 class Board:
@@ -25,6 +26,7 @@ class Board:
         self.set_axis_is_labeled(axis_is_labeled)
         self.set_mobile_friendly(mobile_friendly)
         self.set_floor_plans(plan_ids)
+
 
     def set_floor_plans(self, plans):
         for plan in plans.split(','):
@@ -135,6 +137,96 @@ class Board:
             board_string += '\n'
             for cell in row:
                 board_string += cell
+
+        board_string += '```'
+
+        assert len(board_string) <= 2000, "Board cannot exceed 2000 Characters."
+
+        return board_string
+
+    def display_square(self):
+
+        x = self.width + 4
+        y = self.length + 3
+
+        assert (x * 2) * y < 2000, "Board cannot exceed 2000 Characters."
+
+        my_board = []
+
+        for row in range(y):
+            my_board.append([self.fill] * x)
+
+        my_board[1] = [self.wall] * x
+        my_board[y - 1] = [self.wall] * x
+
+        for row in my_board:
+            row[2] = self.wall
+            row[int(x) - 1] = self.wall
+            row[0] = self.blank
+            row[1] = self.blank
+
+        my_board[0] = [self.blank] * x
+
+        my_char = 'A'
+        count = 1
+
+        for column in range(3, x - 1):
+            my_board[0][column] = my_char
+            if ord(my_char) == ord('Z'):
+                my_char = chr(ord(my_char) + 7)
+            else:
+                my_char = chr(ord(my_char) + 1)
+
+        for row in range(2, y - 1):
+            if row < 11:
+                my_board[row][1] = str(count)
+                count += 1
+            else:
+                my_board[row][0] = str(count)[0]
+                my_board[row][1] = str(count)[1]
+                count += 1
+
+        # Display all entities on board
+
+        for token in self.entities:
+            pos = token.get_position()
+            token_x = token.get_size()[0]
+            token_y = token.get_size()[1]
+            token_row = 0
+            token_column = 0
+            for area in range(token_x * token_y):
+                temp_x = (pos[0] + 3) + token_column
+                temp_y = pos[1] * -1 + 2 + token_row
+                if not bool((area + 1) % token_x):
+                    if temp_x < x and temp_y < y:
+                        my_board[temp_y][temp_x] = token.get_icon()[area % len(token.get_icon())]
+                    token_column = 0
+                    token_row += 1
+                else:
+                    if temp_x < x and temp_y < y:
+                        my_board[temp_y][temp_x] = token.get_icon()[area % len(token.get_icon())]
+                    token_column += 1
+
+        board_string = '```'
+        for row in my_board:
+            board_string += '\n'
+            row_counter = 0
+            for cell in row:
+                if cell == self.blank:
+                    board_string += cell
+                elif my_board.index(row) == 0 and row_counter == 3:
+                    board_string += self.blank + cell + self.blank
+                elif my_board.index(row) == 0:
+                    board_string += cell + self.blank
+                elif cell == self.fill and row_counter == 3:
+                    board_string += self.blank + cell + self.blank
+                elif cell == self.fill:
+                    board_string += cell + self.blank
+                elif cell == self.wall and my_board.index(row) in [1, y - 1] and row_counter != x - 1:
+                    board_string += cell + cell
+                else:
+                    board_string += cell
+                row_counter += 1
 
         board_string += '```'
 
