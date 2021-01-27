@@ -82,7 +82,8 @@ class Manager(commands.Cog):
                         break
                 await reaction.message.edit(content=str(ctx_str))
             elif reaction.emoji == eye:
-                pass
+                new_menu = ctx_str[c_index + 5:].split()[0]
+                print(new_menu)
             elif reaction.emoji == question_mark:
                 quote_index = list(find_all(ctx_str, '```'))[1]
                 if len(ctx_str[quote_index:]) <= 3:
@@ -123,7 +124,8 @@ class Manager(commands.Cog):
                         break
                 await reaction.message.edit(content=str(ctx_str))
             elif reaction.emoji == eye:
-                pass
+                new_menu = ctx_str[c_index + 5:].split()[0]
+                print(new_menu)
             elif reaction.emoji == question_mark:
                 quote_index = list(find_all(ctx_str, '```'))[1]
                 if len(ctx_str[quote_index:]) <= 3:
