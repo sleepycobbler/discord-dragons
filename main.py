@@ -18,6 +18,7 @@ import jsonpickle
 import jsonmaster
 import add
 import lister
+import manager
 
 bot_token = os.environ['BOT_TOKEN']
 
@@ -29,9 +30,10 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 bot.add_cog(add.Add(bot))
 bot.add_cog(lister.Lister(bot))
+bot.add_cog(manager.Manager(bot))
 
 floor_plans = []
 registered_players = []
@@ -86,8 +88,14 @@ async def create_channels(ctx):
         await ctx.guild.create_text_channel('manager', category=my_category)
         await ctx.guild.create_text_channel('dnd_database_do_not_edit', category=my_category)
         database_channel = [x for x in ctx.guild.channels if x.name == 'dnd_database_do_not_edit']
+        manager_channel = [x for x in ctx.guild.channels if x.name == 'manager' and x.category == my_category]
         await database_channel[0].send(jsonpickle.encode(master_list_template))
         await jsonmaster.JsonMaster.add(ctx, floorplan.FloorPlan('Floor 1'))
+        manager_message = await manager_channel[0].send(manager.display_main_manager())
+        await manager_message.add_reaction(emoji.emojize(':up_arrow:'))
+        await manager_message.add_reaction(emoji.emojize(':down_arrow:'))
+        await manager_message.add_reaction(emoji.emojize(':question_mark:'))
+        await manager_message.add_reaction(emoji.emojize(':eye:'))
     else:
         my_msg = await ctx.channel.send('This server has already been initialized.\n This message will be deleted in 5')
         await slow_count.start(my_msg)

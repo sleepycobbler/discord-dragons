@@ -27,6 +27,19 @@ class JsonMaster:
             return jsonpickle.decode(old_master_data_string)
 
     @staticmethod
+    async def get_manager_text(reaction):
+        data_channel = [x for x in reaction.message.guild.channels if
+                        x.name == 'manager']
+        data = await data_channel[0].history(limit=200).flatten()
+        if len(data) > 0:
+            manager_data_string = ''
+
+            for section in await data_channel[0].history(limit=200).flatten():
+                manager_data_string = section.content + manager_data_string
+
+            return manager_data_string
+
+    @staticmethod
     async def add(ctx, obj, obj_parent_id=-1):
 
         master_data = await JsonMaster.get_current_data(ctx)
