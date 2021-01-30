@@ -73,6 +73,16 @@ async def on_ready():
 async def display_menu():
     pass
 
+@bot.command(name="reset")
+@commands.has_permissions(manage_channels=True)
+async def reset_server(ctx):
+    matches = [x for x in ctx.guild.channels if x.category is not None]
+    my_matches = [x for x in matches if x.category.name == 'DISCORD & DRAGONS BOT']
+    for match in my_matches:
+        await match.delete()
+    await my_matches[0].category.delete()
+    await create_channels(ctx)
+
 
 @bot.command(name="initialize")
 @commands.has_permissions(manage_channels=True)

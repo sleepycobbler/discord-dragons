@@ -35,7 +35,7 @@ class Add(commands.Cog):
     async def board(self, ctx, dimensions: DimensionsConverter(), name=None, *mods):
 
         width = int(dimensions[0])
-        length = int(dimensions[0])
+        length = int(dimensions[1])
 
         if (width * 2 + 5) * (length + 4) > 2000:
             await ctx.channel.send("Dimensions too large")
@@ -87,10 +87,9 @@ class Add(commands.Cog):
             my_msg = await ctx.channel.send(board_string)
             await jsonmaster.JsonMaster.add(ctx, new_board, obj_parent_id=current_data['target_floor_plan_id'])
             target_floor_plan = \
-            [x for x in (current_data['floor_plans']) if x.id == current_data['target_floor_plan_id']][0]
+                [x for x in (current_data['floor_plans']) if x.id == current_data['target_floor_plan_id']][0]
             target_index = current_data['floor_plans'].index(target_floor_plan)
-            await ctx.channel.send(
-            "Board saved to floor plan \"" + current_data['floor_plans'][target_index].name + "\"")
+            await ctx.channel.send("Board saved to floor plan \"" + current_data['floor_plans'][target_index].name + "\"")
 
     @add.command()
     async def character(self, ctx, name: str, player_name: discord.Member, max_health: int, armor_class: int, speed: int, *stats: int):
