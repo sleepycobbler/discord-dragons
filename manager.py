@@ -168,6 +168,8 @@ class Manager(commands.Cog):
         list_fp += '**Floor plans:**\n'
         list_fp += '```'
         col_size = max(len(p.name) for p in plans) + 1
+        if col_size > 15:
+            col_size = 15
         nhs = ' ' * (col_size - 3)
         list_fp += tl_corn + hor * 2 + t_down + (hor * (col_size + 1)) + t_down + (hor * 13) + tr_corn + '\n'
         list_fp += vert + '##' + vert + nhs[:int(len(nhs) / 2)] + 'Name' + nhs[
@@ -176,13 +178,23 @@ class Manager(commands.Cog):
         first = True
         for plan in plans:
             if first is True:
-                body += vert + '->' + vert + ' ' + plan.name + (' ' * (col_size - len(plan.name))) + vert + ' ' + str(len(plan.boards)) + \
-                        (11 * ' ') + vert + '\n'
-                first = False
+                if len(plan.name) > 15:
+                    body += vert + '->' + vert + ' ' + plan.name[:12] + '...' + (' ' * (col_size - len(plan.name))) + vert + ' ' + str(len(plan.boards)) + \
+                            (11 * ' ') + vert + '\n'
+                else:
+                    body += vert + '->' + vert + ' ' + plan.name + (' ' * (col_size - len(plan.name))) + vert + ' ' + str(len(plan.boards)) + \
+                            (11 * ' ') + vert + '\n'
+                    first = False
             else:
-                body += vert + '  ' + vert + ' ' + plan.name + (' ' * (col_size - len(plan.name))) + vert + ' ' + str(
-                    len(plan.boards)) + \
-                        (11 * ' ') + vert + '\n'
+                if len(plan.name) > 15:
+                    body += vert + '  ' + vert + ' ' + plan.name[:12] + '...' + (' ' * (col_size - len(plan.name))) + vert + ' ' + str(
+                        len(plan.boards)) + \
+                            (11 * ' ') + vert + '\n'
+                else:
+                    body += vert + '  ' + vert + ' ' + plan.name + (
+                                ' ' * (col_size - len(plan.name))) + vert + ' ' + str(
+                        len(plan.boards)) + \
+                            (11 * ' ') + vert + '\n'
         list_fp += body
         list_fp += bl_corn + hor * 2 + t_up + (hor * (col_size + 1)) + t_up + (hor * 13) + br_corn + '\n'
         list_fp += '```'
